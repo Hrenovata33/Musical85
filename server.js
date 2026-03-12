@@ -72,9 +72,7 @@ const CONFIG = {
     BASE_URL_MONEY: process.env.BASE_URL_MONEY,
     BASE_URL_SPRAY: process.env.BASE_URL_SPRAY,
     BASE_URL_ACH: process.env.BASE_URL_ACH,
-	BASE_URL_OPENPACK: process.env.BASE_URL_OPENPACK,
-
-	//PORT = process.env.PORT || 3000;
+    BASE_URL_OPENPACK: process.env.BASE_URL_OPENPACK,
     USERS_FILE: 'users.json',
 };
 
@@ -146,7 +144,7 @@ async function initializeApp() {
 function startImmediateOperations() {
     console.log('🎯 STARTING IMMEDIATE OPERATIONS...');
     
-    // Give it 1 minute for JWT to be fully ready, then start achievements and funds
+    // Give it 2 minutes for JWT to be fully ready, then start achievements and funds
     setTimeout(() => {
         Object.keys(userData).forEach((userId) => {
             const user = userData[userId];
@@ -154,8 +152,9 @@ function startImmediateOperations() {
                 logActivity(userId, '🚀 Starting immediate operations after startup');
                 
                 // First achievements claim (immediately after startup)
-                new Promise((resolve) => setTimeout(resolve, 10000));
-				claimAchievements(userId);
+                setTimeout(() => {
+                    claimAchievements(userId);
+                }, 10000);
                 
                 // First funds check
                 checkFunds(userId);
@@ -166,7 +165,7 @@ function startImmediateOperations() {
                 }
             }
         });
-    }, 120000); // 1 minute delay
+    }, 120000); // 2 minute delay
 }
 
 // Load user configuration from file
@@ -187,7 +186,8 @@ async function loadUserConfig() {
                 logs: [],
                 isActive: false,
                 dailyAchievementsDone: false,
-                dailyFundsChecks: 0
+                dailyFundsChecks: 0,
+                packsOpened: 0  // Added missing property
             };
         }
         console.log(`✅ Loaded configuration for ${users.length} users`);
@@ -386,7 +386,7 @@ async function claimAchievements(userId) {
             return 0;
         }
 
-        //logActivity(userId, `🎯 Found ${validIDs.length} achievements to claim`);
+        logActivity(userId, `🎯 Found ${validIDs.length} achievements to claim`);
 
         // Claim achievements in batches
         const batchSize = 3;
@@ -399,7 +399,7 @@ async function claimAchievements(userId) {
                 
                 if (claimResult.success) {
                     totalClaimed++;
-                    //logActivity(userId, `✅ Claimed achievement ID: ${achievementId}`);
+                    logActivity(userId, `✅ Claimed achievement ID: ${achievementId}`);
                 } else {
                     logActivity(userId, `❌ Failed to claim achievement ${achievementId}: ${claimResult.error}`);
                 }
@@ -428,7 +428,7 @@ async function openPack(userId, packId) {
     if (!user?.jwtToken) return false;
 
     const result = await makeAPIRequest(
-        CONFIG.BASE_URL_OPENPACK,
+        BASE_URL_OPENPACK,  // Fixed: was CONFIG.BASE_URL_OPENPACK
         'POST',
         { 'x-user-jwt': user.jwtToken },
         { packId },
@@ -529,7 +529,7 @@ async function executeSpin(userId) {
     return spinSuccess ? prizeName : null;
 }
 
-// Calculate next spin time with randomization - FIXED VERSION
+// Calculate next spin time with randomization
 function calculateNextSpinTime(userId) {
     const user = userData[userId];
     if (!user) return null;
@@ -620,18 +620,6 @@ function logActivity(userId, message) {
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Daily Plan (UTC + randomized StartDay ±20m)
-//
-// For each user, every day we compute an "effective" window:
-//   effectiveStart = StartDay (from users.json) ± 20 minutes (random, in ms)
-//   effectiveEnd   = EndDay (fixed, same as users.json)
-//
-// We then schedule Achievements:
-//   #1  effectiveStart + 35 minutes
-//   #2  #1 + 8 hours
-//   #3  effectiveEnd - 25 minutes
-//
-// After #3, we schedule the next day's plan (new randomization).
-// Also exposes effective window so isWithinActiveWindow() uses it (spins + funds).
 // ───────────────────────────────────────────────────────────────────────────────
 
 function utcTodayAt(hour, minute, second = 0, ms = 0) {
@@ -859,14 +847,8 @@ function startContinuousOperations() {
                 await checkFunds(userId);
             }
         }
-    }, 120 * 60 * 1000);
+    }, 60 * 60 * 1000); // Fixed: changed from 120 to 60 minutes
 }
-
-// Schedule achievements based on server start time
-
-
-// Schedule end-of-day achievements
-
 
 // Scheduled Tasks
 function startScheduledTasks() {
@@ -937,7 +919,7 @@ app.post('/api/spinner-config', async (req, res) => {
     res.json({ success: true, config: globalSpinnerConfig });
 });
 
-// Manual trigger endpoints (for testing) - FIXED: No alert popups
+// Manual trigger endpoints (for testing) - FIXED: Proper endpoints
 app.post('/api/user/:userId/refresh', async (req, res) => {
     const userId = req.params.userId;
     const success = await refreshToken(userId);
