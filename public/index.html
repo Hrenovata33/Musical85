@@ -381,14 +381,14 @@
               <div class="muted">Active</div>
               <div>${u.isActive ? '<span class="ok">Yes</span>' : '<span class="bad">No</span>'}</div>
 
-              <div class="muted">Active Window</div>
-              <div><code class="time">${fmtUTC(startISO)}</code> <span class="pill">jitter ${jitter}</span><br><code class="time">${fmtUTC(endISO)}</code></div>
+              <div class="muted">Window</div>
+              <div><code class="time">${fmtUTC(startISO)}</code> <span class="pill">jitter ${jitter}</span><code class="time">${fmtUTC(endISO)}</code></div>
 
               <div class="muted">Planned A4</div>
               <div>
                 ${ach ? `
-                  #1 <code class="time">${minsFromNow(ach.claim1ISO)}</code><br>
-                  #2 <code class="time">${minsFromNow(ach.claim2ISO)}</code><br>
+                  #1 <code class="time">${minsFromNow(ach.claim1ISO)}</code>
+                  #2 <code class="time">${minsFromNow(ach.claim2ISO)}</code>
                   #3 <code class="time">${minsFromNow(ach.claim3ISO)}</code>
                 ` : '—'}
               </div>
@@ -406,8 +406,8 @@
               <div>${u.packsOpened || 0}</div>
               
               <div class="token-container">
-                <div class="muted">JWT Token (full):</div>
-                <pre class="token-display">${u.jwtToken ? u.jwtToken.substring(0, 100) + '...' : 'No token'}</pre>
+<div class="muted">Token</div>
+<div class="muted small"><pre class="logs" style="font-size: 4pt;">${u.jwtToken ?? 0}</pre></div>
               </div>
             </div>
           </div>
